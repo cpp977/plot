@@ -30,12 +30,14 @@
 #include "unicode.hpp"
 #include "utils.hpp"
 
+#include <iostream>
 #include <algorithm>
 #include <iomanip>
 #include <iterator>
 #include <ostream>
 #include <tuple>
 #include <type_traits>
+#include <vector>
 
 namespace plot
 {
@@ -264,6 +266,7 @@ struct Border {
             case BorderStyle::None:
                 top_left = top = top_right = left = right =
                     bottom_left = bottom = bottom_right = u8" ";
+				xtick = u8"|";
                 return;
             case BorderStyle::Solid:
                 top = bottom = u8"─";
@@ -294,6 +297,8 @@ struct Border {
                 left = right = u8"║";
                 top_left = u8"╔"; top_right = u8"╗";
                 bottom_left = u8"╚"; bottom_right = u8"╝";
+				xtick = u8"╩";
+				ytick = u8"╠";
                 return;
         }
 
@@ -319,7 +324,7 @@ struct Border {
 
     string_view top_left, top, top_right,
                 left, right,
-                bottom_left, bottom, bottom_right;
+		bottom_left, bottom, bottom_right, xtick, ytick;
 };
 
 
@@ -388,6 +393,7 @@ public:
     }
 
     const_iterator cbegin() const {
+		const_iterator it = { { this, 0 } };
         return { { this, 0 } };
     }
 
@@ -450,6 +456,228 @@ inline Label label(string_view text, Align align, std::size_t width = 0, string_
     return Label(text, align, width, fill);
 }
 
+class Xticks;
+
+namespace detail
+{
+    class xticks_line;
+
+    std::ostream& operator<<(std::ostream&, xticks_line const&);
+
+    class xticks_line {
+        friend class detail::block_iterator<Xticks, xticks_line>;
+        friend class plot::Xticks;
+
+        friend std::ostream& operator<<(std::ostream&, xticks_line const&);
+
+        xticks_line(Xticks const* xticks, std::ptrdiff_t overflow)
+            : xticks_(xticks), overflow_(overflow)
+            {}
+
+        xticks_line next() const {
+            return xticks_line(xticks_, overflow_ + 1);
+        }
+
+        bool equal(xticks_line const& other) const {
+            return overflow_ == other.overflow_;
+        }
+
+        Xticks const* xticks_ = nullptr;
+        std::ptrdiff_t overflow_ = 0;
+
+    public:
+        xticks_line() = default;
+    };
+} /* namespace detail */
+
+class Xticks {
+public:
+    using value_type = detail::xticks_line;
+    using reference = value_type const&;
+    using const_reference = value_type const&;
+    using const_iterator = detail::block_iterator<Xticks, value_type>;
+    using iterator = const_iterator;
+    using difference_type = typename const_iterator::difference_type;
+    using size_type = Size;
+
+    explicit Xticks(std::vector<std::size_t> locations, std::size_t width, string_view xtick, string_view fill)
+        : locations_(locations), width_(width), xtick_(xtick), fill_(fill)
+        {}
+
+    const_iterator begin() const {
+        return cbegin();
+    }
+
+    const_iterator end() const {
+        return cend();
+    }
+
+    const_iterator cbegin() const {
+		const_iterator it = { { this, 0 } };
+        return { { this, 0 } };
+    }
+
+    const_iterator cend() const {
+        return { { this, 1 } };
+    }
+
+private:
+    friend std::ostream& detail::operator<<(std::ostream&, value_type const&);
+
+	std::vector<std::size_t> locations_;
+	std::size_t width_ = 0;
+    string_view fill_ = " ";
+	string_view xtick_ = "|";
+	
+};
+
+inline std::ostream& operator<<(std::ostream& stream, Xticks const& xticks) {
+    auto line = *xticks.cbegin();
+    stream << line << '\n';
+
+    return stream;
+}
+
+namespace detail
+{
+    inline std::ostream& operator<<(std::ostream& stream, xticks_line const& line) {
+		auto const locations = line.xticks_->locations_;
+        auto const width = line.xticks_->width_;
+
+		for (std::size_t x=0; x<width; x++)
+		{
+			if (auto it=std::find(std::begin(locations),std::end(locations),x); it!=std::end(locations))
+				stream << line.xticks_->xtick_;
+			else
+				stream << line.xticks_->fill_;
+		}
+
+        return stream;
+    }
+} /* namespace detail */
+
+inline Xticks xticks(std::vector<std::size_t> locations, std::size_t width = 0, string_view xtick = "|", string_view fill = " ") {
+    return Xticks(locations, width, xtick, fill);
+}
+
+class XtickLabels;
+
+namespace detail
+{
+    class xtickLabels_line;
+
+    std::ostream& operator<<(std::ostream&, xtickLabels_line const&);
+
+    class xtickLabels_line {
+        friend class detail::block_iterator<XtickLabels, xtickLabels_line>;
+        friend class plot::XtickLabels;
+
+        friend std::ostream& operator<<(std::ostream&, xtickLabels_line const&);
+
+        xtickLabels_line(XtickLabels const* xtickLabels, std::ptrdiff_t overflow)
+            : xtickLabels_(xtickLabels), overflow_(overflow)
+            {}
+
+        xtickLabels_line next() const {
+            return xtickLabels_line(xtickLabels_, overflow_ + 1);
+        }
+
+        bool equal(xtickLabels_line const& other) const {
+            return overflow_ == other.overflow_;
+        }
+
+        XtickLabels const* xtickLabels_ = nullptr;
+        std::ptrdiff_t overflow_ = 0;
+
+    public:
+        xtickLabels_line() = default;
+    };
+} /* namespace detail */
+
+class XtickLabels {
+public:
+    using value_type = detail::xtickLabels_line;
+    using reference = value_type const&;
+    using const_reference = value_type const&;
+    using const_iterator = detail::block_iterator<XtickLabels, value_type>;
+    using iterator = const_iterator;
+    using difference_type = typename const_iterator::difference_type;
+    using size_type = Size;
+
+    explicit XtickLabels(std::vector<std::pair<std::size_t, std::string> > xtickLabels, std::size_t width)
+        : xtickLabels_(xtickLabels), width_(width)
+        {}
+
+    const_iterator begin() const {
+        return cbegin();
+    }
+
+    const_iterator end() const {
+        return cend();
+    }
+
+    const_iterator cbegin() const {
+		const_iterator it = { { this, 0 } };
+        return { { this, 0 } };
+    }
+
+    const_iterator cend() const {
+        return { { this, 1 } };
+    }
+
+private:
+    friend std::ostream& detail::operator<<(std::ostream&, value_type const&);
+
+	std::vector<std::pair<std::size_t, std::string> > xtickLabels_;
+	std::size_t width_ = 0;
+	
+};
+
+inline std::ostream& operator<<(std::ostream& stream, XtickLabels const& xtickLabels) {
+    auto line = *xtickLabels.cbegin();
+    stream << line << '\n';
+
+    return stream;
+}
+
+namespace detail
+{
+    inline std::ostream& operator<<(std::ostream& stream, xtickLabels_line const& line) {
+		auto const xtickLabels = line.xtickLabels_->xtickLabels_;
+        auto const width = line.xtickLabels_->width_;
+		std::string tmp;
+		
+		for (std::size_t x=0; x<width; x++)
+		{
+			if (auto it=std::find_if(std::begin(xtickLabels),std::end(xtickLabels),[x](const std::pair<std::size_t,std::string> &p) {return p.first == x;}); it!=std::end(xtickLabels))
+			{
+				int index = std::distance(std::begin(xtickLabels), it);
+				// std::cout << "x=" << x << ", label=" << xtickLabels[index].second << std::endl;
+				std::string label = xtickLabels[index].second;
+				std::size_t label_length = utf8_string_width(label.begin(), label.end());
+				// if (label_length%2 == 0) {label_length++;}
+				// assert(label_length%2==1 and "Strange...");
+				std::size_t half = (label_length-1ul);
+				for (std::size_t n=0; n<half; n++) { if (tmp.size()>0) {tmp.pop_back();} }
+				tmp += label;
+				// std::cout << "x=" << x << ", pos=" << pos << ", half=" << half << ", pos-half=" << pos-half << std::endl;
+				// stream.seekp(pos-half);
+
+			}
+			else
+			{
+				tmp += " ";
+			}
+			// std::cout << "x=" << x << std::endl << "     " << tmp << std::endl;
+		}
+		stream << tmp;
+        return stream;
+    }
+} /* namespace detail */
+
+inline XtickLabels xtickLabels(std::vector<std::pair<std::size_t,std::string> > xtickLabels, std::size_t width = 0) {
+    return XtickLabels(xtickLabels, width);
+}
 
 template<typename Block>
 class Alignment;
@@ -688,7 +916,6 @@ namespace detail
             stream << std::setw(line.margin_->size().x)
                    << u8"";
         }
-
         return stream << std::setfill(fill);
     }
 } /* namespace detail */
@@ -848,6 +1075,20 @@ public:
         : label_(label), align_(align), block_(std::move(block)), term_(term)
         {}
 
+	explicit Frame(const std::vector<std::size_t> &xticks, string_view label, Align align, Border border, Block block, TerminalInfo term = TerminalInfo())
+        : xticks_(xticks), label_(label), align_(align), border_(border), block_(std::move(block)), term_(term)
+        {}
+
+	explicit Frame(const std::vector<std::size_t> &xticks, const std::vector<std::size_t> &yticks,
+				   const std::vector<std::pair<std::size_t,std::string> > &xtickLabels, const std::vector<std::pair<std::size_t,std::string> > &ytickLabels,
+				   string_view label, Align align, Border border, Block block, TerminalInfo term = TerminalInfo())
+        : xticks_(xticks), yticks_(yticks), xtickLabels_(xtickLabels), ytickLabels_(ytickLabels), label_(label), align_(align), border_(border), block_(std::move(block)), term_(term)
+        {}
+
+	explicit Frame(const std::initializer_list<std::size_t> &xticks, string_view label, Align align, Border border, Block block, TerminalInfo term = TerminalInfo())
+        : xticks_(xticks), label_(label), align_(align), border_(border), block_(std::move(block)), term_(term)
+        {}
+
     explicit Frame(string_view label, Border border, Block block, TerminalInfo term = TerminalInfo())
         : label_(label), border_(border), block_(std::move(block)), term_(term)
         {}
@@ -881,7 +1122,13 @@ private:
     friend class detail::frame_line;
     friend std::ostream& detail::operator<< <Block>(std::ostream&, value_type const&);
 
-    string_view label_;
+    string_view label_;	
+	std::vector<std::size_t> xticks_;
+	std::vector<std::size_t> yticks_;
+	
+	std::vector<std::pair<std::size_t,std::string> > xtickLabels_;
+	std::vector<std::pair<std::size_t,std::string> > ytickLabels_;
+	
     Align align_ = Align::Left;
     Border border_{BorderStyle::Solid};
     Block block_;
@@ -902,24 +1149,64 @@ namespace detail
     std::ostream& operator<<(std::ostream& stream, frame_line<Block> const& line) {
         auto size = detail::block_traits<Block>::size(line.frame_->block_);
         auto const border = line.frame_->border_;
-
+		auto const yticks = line.frame_->yticks_;
+		auto const ytickLabels = line.frame_->ytickLabels_;
+		std::size_t longest_ytickLabel = 0;
+		for (const auto& [pos, label] : ytickLabels)
+		{
+			if (utf8_string_width(label) > longest_ytickLabel)
+				longest_ytickLabel = utf8_string_width(label);
+		}
+		std::string spaces(longest_ytickLabel,' ');
+		string_view label_left = spaces;
+		// std::cout << "max=" << longest_ytickLabel << "label_left=" << label_left << "end" << std::endl;
+		// std::cout << "overflow=" << line.overflow_ << std::endl;
         if (line.overflow_ < 0) {
             auto lbl = label(line.frame_->label_, line.frame_->align_, size.x, border.top);
             auto lbl_line = *lbl.cbegin();
 
-            return stream << line.frame_->term_.reset()
+            return stream << line.frame_->term_.reset() << label_left
                           << border.top_left << lbl_line << border.top_right;
         } else if (line.line_ == line.end_) {
-            stream << line.frame_->term_.reset() << border.bottom_left;
+			auto tck = xticks(line.frame_->xticks_, size.x, border.xtick, border.bottom);
+			auto tck_line = *tck.cbegin();
 
-            for (auto i = 0; i < size.x; ++i)
-                stream << border.bottom;
 
-            return stream << border.bottom_right;
+			auto tckLabels = xtickLabels(line.frame_->xtickLabels_, size.x);
+			auto tckLabels_line = *tckLabels.cbegin();
+
+			return stream << line.frame_->term_.reset() << label_left
+						  << border.bottom_left << tck_line << border.bottom_right
+						  << line.frame_->term_.reset() << '\n' << label_left
+						  << "   " << tckLabels_line << " ";
+            // stream << line.frame_->term_.reset() << border.bottom_left;
+
+            // for (auto i = 0; i < size.x; ++i)
+			// {
+			// 	if (i%10 == 0) {stream << "╩";}
+			// 	else {stream << border.bottom;}
+			// }
+
+            // return stream << border.bottom_right;
         }
+		auto lines = (*(*(line.line_)).canvas_).lines();
+		auto ln = lines - std::distance(line.line_,line.end_);
+		// std::cout << "ln=" << ln << std::endl;
+		string_view border_left=border.left;
+		if (auto it=std::find(std::begin(yticks),std::end(yticks),ln); it != std::end(yticks))
+			border_left = border.ytick;
 
+
+		if (auto it=std::find_if(std::begin(ytickLabels),std::end(ytickLabels),[ln](const std::pair<std::size_t,std::string> &p) {return p.first == ln;}); it!=std::end(ytickLabels))
+		{
+			int index = std::distance(std::begin(ytickLabels), it);
+			std::string label_left_str = ytickLabels[index].second;
+			label_left_str.insert(label_left_str.begin(), longest_ytickLabel - label_left_str.length(), ' ');
+			label_left = label_left_str;
+		}
         return stream << line.frame_->term_.reset()
-                      << line.frame_->border_.left
+					  << label_left
+                      << border_left
                       << *line.line_
                       << line.frame_->term_.reset()
                       << line.frame_->border_.right;
@@ -944,6 +1231,23 @@ inline Frame<std::decay_t<Block>> frame(string_view label, Block&& block, Termin
 template<typename Block>
 inline Frame<std::decay_t<Block>> frame(string_view label, Align align, Block&& block, TerminalInfo term = TerminalInfo()) {
     return Frame<std::decay_t<Block>>(label, align, std::forward<Block>(block), term);
+}
+
+template<typename Block>
+inline Frame<std::decay_t<Block>> frame(const std::vector<std::size_t> &xticks, string_view label, Align align, Border border, Block&& block, TerminalInfo term = TerminalInfo()) {
+    return Frame<std::decay_t<Block>>(xticks, label, align, border, std::forward<Block>(block), term);
+}
+
+template<typename Block>
+inline Frame<std::decay_t<Block>> frame(const std::vector<std::size_t> &xticks, const std::vector<std::size_t> &yticks,
+										const std::vector<std::pair<std::size_t,std::string> > &xtickLabels, const std::vector<std::pair<std::size_t,std::string> > &ytickLabels,
+										string_view label, Align align, Border border, Block&& block, TerminalInfo term = TerminalInfo()) {
+    return Frame<std::decay_t<Block>>(xticks, yticks, xtickLabels, ytickLabels, label, align, border, std::forward<Block>(block), term);
+}
+
+template<typename Block>
+inline Frame<std::decay_t<Block>> frame(const std::initializer_list<std::size_t> &xticks, string_view label, Align align, Border border, Block&& block, TerminalInfo term = TerminalInfo()) {
+    return Frame<std::decay_t<Block>>(xticks, label, align, border, std::forward<Block>(block), term);
 }
 
 template<typename Block>

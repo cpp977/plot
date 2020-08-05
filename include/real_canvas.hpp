@@ -36,24 +36,24 @@
 namespace plot
 {
 
-template<typename Canvas>
+	template<typename Canvas, typename Scalar=double>
 class RealCanvas
 {
 public:
-    using coord_type = Coordf;
-    using point_type = Pointf;
-    using size_type = Sizef;
-    using rect_type = Rectf;
+    using coord_type = Scalar;
+    using point_type = GenericPoint<Scalar>;
+    using size_type = GenericSize<Scalar>;
+    using rect_type = GenericRect<Scalar>;
 
     RealCanvas() = default;
 
-    template<typename Arg, typename... Args, std::enable_if_t<!std::is_same<std::decay_t<Arg>, Rectf>::value>* = nullptr>
+    template<typename Arg, typename... Args, std::enable_if_t<!std::is_same<std::decay_t<Arg>, GenericRect<Scalar> >::value>* = nullptr>
     RealCanvas(Arg&& arg, Args&&... args)
         : canvas_(std::forward<Arg>(arg), std::forward<Args>(args)...)
         {}
 
     template<typename... Args>
-    RealCanvas(Rectf bnds, Args&&... args)
+    RealCanvas(GenericRect<Scalar> bnds, Args&&... args)
         : bounds_(bnds), canvas_(std::forward<Args>(args)...)
         {}
 
@@ -120,7 +120,7 @@ public:
     }
 
     template<typename Fn, typename... Args>
-    RealCanvas& stroke(Color const& color, Rectf const& rct, Fn&& fn, Args&&... args) {
+    RealCanvas& stroke(Color const& color, GenericRect<Scalar> const& rct, Fn&& fn, Args&&... args) {
         canvas_.stroke(color, map(rct), [this,&fn](typename Canvas::coord_type x) {
             auto real_bounds = fn(unmap(Point(x, 0)).x, unmap(Point(x + 1, 0)).x);
             auto base = map(Pointf(0, real_bounds.first)).y,
@@ -132,7 +132,7 @@ public:
     }
 
     template<typename Fn, typename... Args>
-    RealCanvas& fill(Color const& color, Rectf const& rct, Fn&& fn, Args&&... args) {
+    RealCanvas& fill(Color const& color, GenericRect<Scalar> const& rct, Fn&& fn, Args&&... args) {
         canvas_.fill(color, map(rct), [this,&fn](typename Canvas::point_type p) {
             return fn(unmap(p));
         }, std::forward<Args>(args)...);
@@ -140,13 +140,13 @@ public:
     }
 
     template<typename... Args>
-    RealCanvas& dot(Color const& color, Pointf p, Args&&... args) {
+    RealCanvas& dot(Color const& color, GenericPoint<Scalar> p, Args&&... args) {
         canvas_.dot(color, map(p), std::forward<Args>(args)...);
         return *this;
     }
 
     template<typename... Args>
-    RealCanvas& line(Color const& color, Pointf from, Pointf to, Args&&... args) {
+    RealCanvas& line(Color const& color, GenericPoint<Scalar> from, GenericPoint<Scalar> to, Args&&... args) {
         canvas_.line(color, map(from), map(to), std::forward<Args>(args)...);
         return *this;
     }
@@ -164,47 +164,47 @@ public:
     }
 
     template<typename... Args>
-    RealCanvas& path(Color const& color, std::initializer_list<Pointf> const& points, Args&&... args) {
+    RealCanvas& path(Color const& color, std::initializer_list<GenericPoint<Scalar> > const& points, Args&&... args) {
         return path(color, points.begin(), points.end(), std::forward<Args>(args)...);
     }
 
     template<typename... Args>
-    RealCanvas& rect(Color const& color, Rectf const& rct, Args&&... args) {
+    RealCanvas& rect(Color const& color, GenericRect<Scalar> const& rct, Args&&... args) {
         canvas_.rect(color, map(rct), std::forward<Args>(args)...);
         return *this;
     }
 
     template<typename... Args>
-    RealCanvas& rect(Color const& stroke_color, Color const& fill_color, Rectf const& rct, Args&&... args) {
+    RealCanvas& rect(Color const& stroke_color, Color const& fill_color, GenericRect<Scalar> const& rct, Args&&... args) {
         canvas_.rect(stroke_color, fill_color, map(rct), std::forward<Args>(args)...);
         return *this;
     }
 
     template<typename... Args>
-    RealCanvas& ellipse(Color const& color, Rectf const& rct, Args&&... args) {
+    RealCanvas& ellipse(Color const& color, GenericRect<Scalar> const& rct, Args&&... args) {
         canvas_.ellipse(color, map(rct), std::forward<Args>(args)...);
         return *this;
     }
 
     template<typename... Args>
-    RealCanvas& ellipse(Color const& stroke_color, Color const& fill_color, Rectf const& rct, Args&&... args) {
+    RealCanvas& ellipse(Color const& stroke_color, Color const& fill_color, GenericRect<Scalar> const& rct, Args&&... args) {
         canvas_.ellipse(stroke_color, fill_color, map(rct), std::forward<Args>(args)...);
         return *this;
     }
 
     template<typename... Args>
-    RealCanvas& ellipse(Color const& color, Pointf center, Sizef semiaxes, Args&&... args) {
+    RealCanvas& ellipse(Color const& color, GenericPoint<Scalar> center, GenericSize<Scalar> semiaxes, Args&&... args) {
         canvas_.ellipse(color, map(center), map_size(semiaxes), std::forward<Args>(args)...);
         return *this;
     }
 
     template<typename... Args>
-    RealCanvas& ellipse(Color const& color, Color const& fill_color, Pointf center, Sizef semiaxes, Args&&... args) {
+    RealCanvas& ellipse(Color const& color, Color const& fill_color, GenericPoint<Scalar> center, GenericSize<Scalar> semiaxes, Args&&... args) {
         canvas_.ellipse(color, fill_color, map(center), map_size(semiaxes), std::forward<Args>(args)...);
         return *this;
     }
 
-    typename Canvas::point_type map(Pointf const& p) const {
+    typename Canvas::point_type map(GenericPoint<Scalar> const& p) const {
         auto canvas_bounds = canvas_.size();
         canvas_bounds -= decltype(canvas_bounds){ 1, 1 };
         return {
@@ -213,11 +213,11 @@ public:
         };
     }
 
-    typename Canvas::rect_type map(Rectf const& r) const {
+    typename Canvas::rect_type map(GenericRect<Scalar> const& r) const {
         return { map(r.p1), map(r.p2) };
     }
 
-    typename Canvas::size_type map_size(Sizef const& s) const {
+    typename Canvas::size_type map_size(GenericSize<Scalar> const& s) const {
         auto sz = this->size();
         auto canvas_bounds = canvas_.size();
         canvas_bounds -= decltype(canvas_bounds){ 1, 1 };
@@ -227,56 +227,56 @@ public:
         };
     }
 
-    Pointf unmap(typename Canvas::point_type const& p) const {
+    GenericPoint<Scalar> unmap(typename Canvas::point_type const& p) const {
         auto canvas_bounds = canvas_.size();
         canvas_bounds -= decltype(canvas_bounds){ 1, 1 };
         return {
-            (float(p.x)/canvas_bounds.x)*(bounds_.p2.x - bounds_.p1.x) + bounds_.p1.x,
-            (float(p.y)/canvas_bounds.y)*(bounds_.p2.y - bounds_.p1.y) + bounds_.p1.y
+            (Scalar(p.x)/canvas_bounds.x)*(bounds_.p2.x - bounds_.p1.x) + bounds_.p1.x,
+            (Scalar(p.y)/canvas_bounds.y)*(bounds_.p2.y - bounds_.p1.y) + bounds_.p1.y
         };
     }
 
-    Rectf unmap(typename Canvas::rect_type const& r) const {
+    GenericRect<Scalar> unmap(typename Canvas::rect_type const& r) const {
         return { unmap(r.p1), unmap(r.p2) };
     }
 
-    Sizef unmap_size(typename Canvas::size_type const& s) const {
+    GenericSize<Scalar> unmap_size(typename Canvas::size_type const& s) const {
         auto sz = this->size();
         auto canvas_bounds = canvas_.size();
         canvas_bounds -= decltype(canvas_bounds){ 1, 1 };
         return {
-            float(s.x)/canvas_bounds.x * sz.x,
-            float(s.y)/canvas_bounds.y * sz.y
+            Scalar(s.x)/canvas_bounds.x * sz.x,
+            Scalar(s.y)/canvas_bounds.y * sz.y
         };
     }
 
 private:
-    Rectf bounds_{ { 0.0f, 1.0f }, { 1.0f, 0.0f } };
+    GenericRect<Scalar> bounds_{ { Scalar(0.0), Scalar(1.0) }, { Scalar(1.0), Scalar(0.0) } };
     Canvas canvas_;
 };
 
-template<typename Canvas>
-inline std::ostream& operator<<(std::ostream& stream, RealCanvas<Canvas> const& canvas) {
+	template<typename Canvas, typename Scalar>
+	inline std::ostream& operator<<(std::ostream& stream, RealCanvas<Canvas,Scalar> const& canvas) {
     return stream << canvas.canvas();
 }
 
 namespace detail
 {
     // Make RealCanvas a valid block
-    template<typename Canvas, bool IsCanvas>
-    struct block_ref_traits<plot::RealCanvas<Canvas>, IsCanvas>
+    template<typename Canvas, typename Scalar, bool IsCanvas>
+    struct block_ref_traits<plot::RealCanvas<Canvas,Scalar>, IsCanvas>
     {
         using iterator = typename Canvas::const_iterator;
 
-        static Size size(plot::RealCanvas<Canvas> const& block) {
+        static Size size(plot::RealCanvas<Canvas,Scalar> const& block) {
             return block.canvas().char_size();
         }
 
-        static iterator begin(plot::RealCanvas<Canvas> const& block) {
+        static iterator begin(plot::RealCanvas<Canvas,Scalar> const& block) {
             return block.canvas().begin();
         }
 
-        static iterator end(plot::RealCanvas<Canvas> const& block) {
+        static iterator end(plot::RealCanvas<Canvas,Scalar> const& block) {
             return block.canvas().end();
         }
     };

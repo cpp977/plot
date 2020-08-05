@@ -265,6 +265,10 @@ public:
         return { Coord(cell_cols*cols_), Coord(cell_rows*lines_) };
     }
 
+	std::size_t lines() const {
+		return lines_;
+	}
+
     const_iterator begin() const {
         return cbegin();
     }

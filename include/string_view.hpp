@@ -24,12 +24,12 @@
 
 #pragma once
 
-#include <experimental/string_view>
+#include <string_view>
 
 namespace plot
 {
 
-using std::experimental::string_view;
+using std::string_view;
 
 namespace detail
 {
