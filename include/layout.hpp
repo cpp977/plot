@@ -265,40 +265,40 @@ struct Border {
         switch (style) {
             case BorderStyle::None:
                 top_left = top = top_right = left = right =
-                    bottom_left = bottom = bottom_right = u8" ";
-				xtick = u8"|";
+                    bottom_left = bottom = bottom_right = " ";
+				xtick = "|";
                 return;
             case BorderStyle::Solid:
-                top = bottom = u8"─";
-                left = right = u8"│";
+                top = bottom = "─";
+                left = right = "│";
                 break;
             case BorderStyle::SolidBold:
-                top = bottom = u8"━";
-                left = right = u8"┃";
+                top = bottom = "━";
+                left = right = "┃";
                 break;
             case BorderStyle::Dashed:
-                top = u8"╴"; bottom = u8"╶";
-                left = u8"╷"; right = u8"╵";
+                top = "╴"; bottom = "╶";
+                left = "╷"; right = "╵";
                 break;
             case BorderStyle::DashedBold:
-                top = u8"╸"; bottom = u8"╺";
-                left = u8"╻"; right = u8"╹";
+                top = "╸"; bottom = "╺";
+                left = "╻"; right = "╹";
                 break;
             case BorderStyle::Dotted:
-                top = bottom = u8"┈";
-                left = right = u8"┊";
+                top = bottom = "┈";
+                left = right = "┊";
                 break;
             case BorderStyle::DottedBold:
-                top = bottom = u8"┉";
-                left = right = u8"┋";
+                top = bottom = "┉";
+                left = right = "┋";
                 break;
             case BorderStyle::Double:
-                top = bottom = u8"═";
-                left = right = u8"║";
-                top_left = u8"╔"; top_right = u8"╗";
-                bottom_left = u8"╚"; bottom_right = u8"╝";
-				xtick = u8"╩";
-				ytick = u8"╠";
+                top = bottom = "═";
+                left = right = "║";
+                top_left = "╔"; top_right = "╗";
+                bottom_left = "╚"; bottom_right = "╝";
+				xtick = "╩";
+				ytick = "╠";
                 return;
         }
 
@@ -306,16 +306,16 @@ struct Border {
             case BorderStyle::Solid:
             case BorderStyle::Dashed:
             case BorderStyle::Dotted:
-                top_left = (rounded_corners) ? u8"╭" : u8"┌";
-                top_right = (rounded_corners) ? u8"╮" : u8"┐";
-                bottom_left = (rounded_corners) ? u8"╰" : u8"└";
-                bottom_right = (rounded_corners) ? u8"╯" : u8"┘";
+                top_left = (rounded_corners) ? "╭" : "┌";
+                top_right = (rounded_corners) ? "╮" : "┐";
+                bottom_left = (rounded_corners) ? "╰" : "└";
+                bottom_right = (rounded_corners) ? "╯" : "┘";
                 return;
             case BorderStyle::SolidBold:
             case BorderStyle::DashedBold:
             case BorderStyle::DottedBold:
-                top_left = u8"┏"; top_right = u8"┓";
-                bottom_left = u8"┗"; bottom_right = u8"┛";
+                top_left = "┏"; top_right = "┓";
+                bottom_left = "┗"; bottom_right = "┛";
                 return;
             default:
                 return;
@@ -730,13 +730,13 @@ namespace detail
         stream << std::setfill(' ');
         if (!line.overflow_ && line.line_ != line.end_) {
             stream << std::setw(line.left_margin_)
-                   << u8""
+                   << ""
                    << *line.line_
                    << std::setw(line.right_margin_)
-                   << u8"";
+                   << "";
         } else {
             stream << std::setw(line.alignment_->size().x)
-                   << u8"";
+                   << "";
         }
 
         return stream << std::setfill(fill);
@@ -908,13 +908,13 @@ namespace detail
         stream << std::setfill(' ');
         if (!line.overflow_ && line.line_ != line.end_) {
             stream << std::setw(line.margin_->left_)
-                   << u8""
+                   << ""
                    << *line.line_
                    << std::setw(line.margin_->right_)
-                   << u8"";
+                   << "";
         } else {
             stream << std::setw(line.margin_->size().x)
-                   << u8"";
+                   << "";
         }
         return stream << std::setfill(fill);
     }
@@ -1365,7 +1365,7 @@ namespace detail
         return (std::get<0>(std::forward<Arg>(first)) != std::get<1>(std::forward<Arg>(first)))
             ? (stream << *std::get<0>(std::forward<Arg>(first))
                       << std::setw(width - detail::block_traits<std::decay_t<std::tuple_element_t<2, std::decay_t<Arg>>>>
-                          ::size(std::get<2>(std::forward<Arg>(first))).x) << u8"")
+                          ::size(std::get<2>(std::forward<Arg>(first))).x) << "")
             : output_vbox_line(stream, width, std::forward<Args>(rest)...);
     }
 
@@ -1391,7 +1391,7 @@ namespace detail
             output_vbox_line(stream, width, line.lines_, line.ends_, line.vbox_->blocks_,
                              std::make_index_sequence<sizeof...(Blocks)>());
         else
-            stream << std::setw(width) << u8"";
+            stream << std::setw(width) << "";
 
         return stream << std::setfill(fill);
     }
@@ -1552,9 +1552,9 @@ namespace detail
                                           Arg&& first, Args&&... rest) {
         return output_hbox_line(
             ((std::get<0>(std::forward<Arg>(first)) != std::get<1>(std::forward<Arg>(first)))
-                ? stream << std::setw(margin) << u8"" << *std::get<0>(std::forward<Arg>(first))
+                ? stream << std::setw(margin) << "" << *std::get<0>(std::forward<Arg>(first))
                 : stream << std::setw(margin + detail::block_traits<std::decay_t<std::tuple_element_t<2, std::decay_t<Arg>>>>
-                    ::size(std::get<2>(std::forward<Arg>(first))).x) << u8""),
+                    ::size(std::get<2>(std::forward<Arg>(first))).x) << ""),
             margin, std::forward<Args>(rest)...);
     }
 
@@ -1569,7 +1569,7 @@ namespace detail
             ((std::get<0>(lines) != std::get<0>(ends))
                 ? stream << *std::get<0>(lines)
                 : stream << std::setw(detail::block_traits<std::decay_t<std::tuple_element_t<0, Blocks>>>
-                    ::size(std::get<0>(blocks)).x) << u8""),
+                    ::size(std::get<0>(blocks)).x) << ""),
             margin, std::forward_as_tuple(std::get<N+1>(lines), std::get<N+1>(ends), std::get<N+1>(blocks))...);
     }
 

@@ -216,10 +216,10 @@ namespace detail { namespace braille
             return it_ == other.it_;
         }
 
-        BrailleCanvas const* canvas_ = nullptr;
         image_t::const_iterator it_{};
 
     public:
+		BrailleCanvas const* canvas_ = nullptr;
         line_t() = default;
     };
 } /* namespace braille */ } /* namespace detail */
